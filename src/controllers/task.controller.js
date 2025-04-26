@@ -1,4 +1,5 @@
 const TaskModel = require("../models/task.model");
+const { notFoundError } = require("../errors/mongodb.errors");
 
 class TaskController {
     constructor(req, res) {
@@ -21,10 +22,9 @@ class TaskController {
             const task = await TaskModel.findById(taskId);
 
             if (!task) {
-                return this.res
-                    .status(404)
-                    .send("Essa tarefa não foi encontrada.");
+                return notFoundError(this.res);
             }
+
             return this.res.status(200).send(task);
         } catch (error) {
             this.res.status(500).send(error.message);
@@ -49,6 +49,10 @@ class TaskController {
             const allowedUpdates = ["isCompleted"];
             const requestedUpdates = Object.keys(taskData);
 
+            if (!taskToUpdate) {
+                return notFoundError(this.res);
+            }
+
             for (const update of requestedUpdates) {
                 if (allowedUpdates.includes(update)) {
                     taskToUpdate[update] = taskData[update];
@@ -67,21 +71,21 @@ class TaskController {
     }
 
     async delete() {
-      try {
-        const taskId = this.req.params.id;
+        try {
+            const taskId = this.req.params.id;
 
-        const taskToDelete = await TaskModel.findById(taskId);
+            const taskToDelete = await TaskModel.findById(taskId);
 
-        if (!taskToDelete) {
-            return this.res.status(404).send("Essa tarefa não foi encontrada.");
+            if (!taskToDelete) {
+                return notFoundError(this.res);
+            }
+
+            const deletedTask = await TaskModel.findByIdAndDelete(taskId);
+
+            this.res.status(200).send(deletedTask);
+        } catch (error) {
+            this.res.status(500).send(error.message);
         }
-
-        const deletedTask = await TaskModel.findByIdAndDelete(taskId);
-
-        this.res.status(200).send(deletedTask);
-    } catch (error) {
-        this.res.status(500).send(error.message);
-    }
     }
 }
 
